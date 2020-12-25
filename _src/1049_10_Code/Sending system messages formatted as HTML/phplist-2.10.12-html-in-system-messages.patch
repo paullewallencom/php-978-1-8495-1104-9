@@ -1,0 +1,126 @@
+diff -Naur phplist-2.10.12/public_html/lists/admin/commonlib/pages/importcsv.php phplist-2.10.12-html-in-system-messages/public_html/lists/admin/commonlib/pages/importcsv.php
+--- phplist-2.10.12/public_html/lists/admin/commonlib/pages/importcsv.php	2010-04-20 12:57:45.000000000 +1200
++++ phplist-2.10.12-html-in-system-messages/public_html/lists/admin/commonlib/pages/importcsv.php	2010-12-06 07:12:07.000000000 +1300
+@@ -832,6 +832,7 @@
+           $count["list_add"]++;
+         if (!TEST && $_SESSION["notify"] == "yes" && $addition) {
+           $subscribemessage = ereg_replace('\[LISTS\]', $listoflists, getUserConfig("subscribemessage", $userid));
++	  $subscribemessage = stripslashes($subscribemessage);  // HACK - Allow HTML in system messages
+           if (function_exists('sendmail')) {
+             sendMail($user["systemvalues"]["email"], getConfig("subscribesubject"), $subscribemessage, system_messageheaders(), $envelope);
+             if (isset ($_SESSION["throttle_import"])) {
+diff -Naur phplist-2.10.12/public_html/lists/admin/import1.php phplist-2.10.12-html-in-system-messages/public_html/lists/admin/import1.php
+--- phplist-2.10.12/public_html/lists/admin/import1.php	2010-04-20 09:18:54.000000000 +1200
++++ phplist-2.10.12-html-in-system-messages/public_html/lists/admin/import1.php	2010-12-06 07:12:26.000000000 +1300
+@@ -244,6 +244,7 @@
+         }
+ 
+         $subscribemessage = ereg_replace('\[LISTS\]', $listoflists, getUserConfig("subscribemessage",$userid));
++	$subscribemessage = stripslashes($subscribemessage);  // HACK - Allow HTML in system messages
+         if (!TEST && $notify == "yes" && $addition)
+           sendMail($email, getConfig("subscribesubject"), $subscribemessage,system_messageheaders(),$envelope);
+         # history stuff
+diff -Naur phplist-2.10.12/public_html/lists/admin/import3.php phplist-2.10.12-html-in-system-messages/public_html/lists/admin/import3.php
+--- phplist-2.10.12/public_html/lists/admin/import3.php	2005-08-03 14:37:10.000000000 +1200
++++ phplist-2.10.12-html-in-system-messages/public_html/lists/admin/import3.php	2010-12-06 07:12:31.000000000 +1300
+@@ -459,6 +459,7 @@
+           $additional_emails++;
+         if (!TEST && $_POST["notify"] == "yes" && $addition) {
+           $subscribemessage = ereg_replace('\[LISTS\]', $listoflists, getUserConfig("subscribemessage",$userid));
++	  $subscribemessage = stripslashes($subscribemessage);  // HACK - Allow HTML in system messages
+           sendMail($email, getConfig("subscribesubject"), $subscribemessage,system_messageheaders(),$envelope);
+         }
+       }; // end if
+diff -Naur phplist-2.10.12/public_html/lists/admin/lib.php phplist-2.10.12-html-in-system-messages/public_html/lists/admin/lib.php
+--- phplist-2.10.12/public_html/lists/admin/lib.php	2010-04-23 04:38:37.000000000 +1200
++++ phplist-2.10.12-html-in-system-messages/public_html/lists/admin/lib.php	2010-12-06 07:12:58.000000000 +1300
+@@ -270,10 +270,18 @@
+     $reply_to = $from_address;
+   $destinationemail = '';
+ 
++  // START HACK - Allow HTML in system messages
++  $html_message = $message;
++  $message = preg_replace('/(<script.*\/script>)|(<style.*\/style>)/i', '', $message);
++  $message = preg_replace('/<a\s*.*?href\s*=\s*("|\')([^"\']*?)("|\').*?>(.*?)<\/a>/i', "$4:\n$2\n", $message);
++  $message = strip_tags($message);
++  // END HACK - Allow HTML in system messages
++
+   if (!ereg("dev",VERSION)) {
+     $mail = new PHPlistMailer('systemmessage',$to);
+     $destinationemail = $to;
+     $mail->add_text($message);
++    $mail->add_html($html_message); // HACK - Allow HTML in system messages
+   } else {
+     # send mails to one place when running a test version
+     $message = "To: $to\n".$message;
+@@ -284,6 +292,7 @@
+       } else {
+         $mail = new PHPlistMailer('systemmessage',$GLOBALS["developer_email"]);
+         $mail->add_text($message);
++        $mail->add_html($html_message); // HACK - Allow HTML in system messages 
+         $destinationemail = $GLOBALS["developer_email"];
+       }
+     } else {
+diff -Naur phplist-2.10.12/public_html/lists/admin/reconcileusers.php phplist-2.10.12-html-in-system-messages/public_html/lists/admin/reconcileusers.php
+--- phplist-2.10.12/public_html/lists/admin/reconcileusers.php	2010-04-20 07:43:46.000000000 +1200
++++ phplist-2.10.12-html-in-system-messages/public_html/lists/admin/reconcileusers.php	2010-12-06 07:13:08.000000000 +1300
+@@ -41,6 +41,7 @@
+     $subject = getConfig("subscribesubject");
+   }
+ 
++  $subscribemessage = stripslashes($subscribemessage);  // HACK - Allow HTML in system messages
+   logEvent($GLOBALS['I18N']->get('Resending confirmation request to')." ".$userdata["email"]);
+   if (!TEST)
+     return sendMail($userdata["email"],$subject, $_REQUEST["prepend"].$subscribemessage,system_messageheaders($userdata["email"]),$envelope);
+diff -Naur phplist-2.10.12/public_html/lists/admin/subscribelib2.php phplist-2.10.12-html-in-system-messages/public_html/lists/admin/subscribelib2.php
+--- phplist-2.10.12/public_html/lists/admin/subscribelib2.php	2010-04-24 03:01:15.000000000 +1200
++++ phplist-2.10.12-html-in-system-messages/public_html/lists/admin/subscribelib2.php	2010-12-06 07:19:22.000000000 +1300
+@@ -310,6 +310,7 @@
+    $history_entry .= "\n\nList Membership: \n$lists\n";
+ 
+    $subscribemessage = ereg_replace('\[LISTS\]', $lists, getUserConfig("subscribemessage:$id",$userid));
++   $subscribemessage = stripslashes($subscribemessage);  // HACK - Allow HTML in system messages
+ 
+    $blacklisted = isBlackListed($email);
+ 
+@@ -592,6 +593,7 @@
+ 
+   $message = ereg_replace('\[LISTS\]', $lists, getUserConfig("updatemessage",$userid));
+   $message = ereg_replace('\[USERDATA\]', $datachange, $message);
++  $message = stripslashes($message);  // HACK - Allow HTML in system messages
+   if ($emailchanged) {
+     $newaddressmessage = ereg_replace('\[CONFIRMATIONINFO\]', getUserConfig("emailchanged_text",$userid), $message);
+     $oldaddressmessage = ereg_replace('\[CONFIRMATIONINFO\]', getUserConfig("emailchanged_text_oldaddress",$userid), $message);
+diff -Naur phplist-2.10.12/public_html/lists/index.php phplist-2.10.12-html-in-system-messages/public_html/lists/index.php
+--- phplist-2.10.12/public_html/lists/index.php	2010-04-10 05:00:38.000000000 +1200
++++ phplist-2.10.12-html-in-system-messages/public_html/lists/index.php	2010-12-06 07:25:55.000000000 +1300
+@@ -127,7 +127,11 @@
+     $uid = Sql_Fetch_Row_Query(sprintf('select uniqid,email,id from %s where email = "%s"',
+       $tables["user"],$_POST["email"]));
+     if ($uid[0]) {
+-      sendMail ($uid[1],getConfig("personallocation_subject"),getUserConfig("personallocation_message",$uid[2]),system_messageheaders(),$GLOBALS["envelope"]);
++      // START HACK - Allow HTML in system messages
++      $personallocmessage = getUserConfig("personallocation_message",$uid[2]);
++      $personallocmessage = stripslashes($personallocmessage);
++      sendMail ($uid[1],getConfig("personallocation_subject"),$personallocmessage,system_messageheaders(),$GLOBALS["envelope"]);
++      // END HACK - Allow HTML in system messages
+       $msg = $GLOBALS["strPersonalLocationSent"];
+       addSubscriberStatistics('personal location sent',1);
+     } else {
+@@ -553,7 +557,7 @@
+     addUserHistory($userdata["email"],"Confirmation","Lists: $lists");
+ 
+     $confirmationmessage = ereg_replace('\[LISTS\]', $lists, getUserConfig("confirmationmessage:$id",$userdata["id"]));
+-
++    $confirmationmessage = stripslashes($confirmationmessage);  // HACK - Allow HTML in system messages
+     if (!TEST) {
+       sendMail($userdata["email"], getConfig("confirmationsubject:$id"), $confirmationmessage,system_messageheaders(),$envelope);
+       $adminmessage = $userdata["email"] . " has confirmed their subscription";
+@@ -654,6 +658,7 @@
+ 
+       addUserHistory($email,"Unsubscription","Unsubscribed from $lists");
+       $unsubscribemessage = ereg_replace("\[LISTS\]", $lists,getUserConfig("unsubscribemessage",$userid));
++      $unsubscribemessage = stripslashes($unsubscribemessage);  // HACK - Allow HTML in system messages
+       sendMail($email, getConfig("unsubscribesubject"), stripslashes($unsubscribemessage), system_messageheaders($email));
+       $reason = $_POST["unsubscribereason"] ? "Reason given:\n".stripslashes($_POST["unsubscribereason"]):"No Reason given";
+       sendAdminCopy("List unsubscription",$email . " has unsubscribed\n$reason");

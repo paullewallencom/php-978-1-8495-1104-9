@@ -1,0 +1,18 @@
+diff -Naur phplist-2.10.12/public_html/lists/admin/sendemaillib.php phplist-2.10.12-attribute-substitution-in-subject/public_html/lists/admin/sendemaillib.php
+--- phplist-2.10.12/public_html/lists/admin/sendemaillib.php	2010-04-20 06:27:49.000000000 +1200
++++ phplist-2.10.12-attribute-substitution-in-subject/public_html/lists/admin/sendemaillib.php	2010-12-06 07:28:06.000000000 +1300
+@@ -765,6 +765,14 @@
+       $subject = $GLOBALS['strFwd'].': '.$cached[$messageid]["subject"];
+     }
+ 
++   // START HACK - Perform attribute replacement in the subject
++   if (is_array($user_att_values)) {
++   	foreach ($user_att_values as $att_name => $att_value) {
++		$subject = str_ireplace("[$att_name]",$att_value, $subject);
++   	}
++   }
++   // END HACK - Perform attribute replacement in the subject
++
+     if (!$mail->send("", $destinationemail, $fromname, $fromemail, $subject)) {
+       logEvent("Error sending message $messageid to $email ($destinationemail)");
+       return 0;

@@ -1,0 +1,81 @@
+diff -Naur phplist-2.10.12-orig/public_html/lists/admin/subscribelib2.php phplist-2.10.12/public_html/lists/admin/subscribelib2.php
+--- phplist-2.10.12-orig/public_html/lists/admin/subscribelib2.php	2010-04-24 03:01:15.000000000 +1200
++++ phplist-2.10.12/public_html/lists/admin/subscribelib2.php	2010-10-22 12:45:17.000000000 +1300
+@@ -87,6 +87,20 @@
+   }
+ }
+ 
++// Confirm reCAPTCHA was successfully entered 
++if (file_exists('admin/recaptchalib.php') && is_readable('admin/recaptchalib.php')) {
++  require_once('admin/recaptchalib.php');
++  $privatekey = "your private key";
++  $resp = recaptcha_check_answer ($privatekey,
++    $_SERVER["REMOTE_ADDR"],
++    $_POST["recaptcha_challenge_field"],
++    $_POST["recaptcha_response_field"]);
++  if (!$resp->is_valid) { 
++    $missing = 'Please try typing the two words again'; 
++    $allthere = 0;
++  }
++}
++
+ // anti spambot check
+ if (!empty($_POST['VerificationCodeX'])) {
+   if (NOTIFY_SPAM) {
+diff -Naur phplist-2.10.12-orig/public_html/lists/index.php phplist-2.10.12/public_html/lists/index.php
+--- phplist-2.10.12-orig/public_html/lists/index.php	2010-04-10 05:00:38.000000000 +1200
++++ phplist-2.10.12/public_html/lists/index.php	2010-10-22 12:44:20.000000000 +1300
+@@ -514,6 +514,12 @@
+   if (empty($data['button'])) {
+     $data['button'] = $GLOBALS['strSubmit'];
+   }
++  // Insert reCAPTCHA if library exists and webserver has permission to read it
++  if (file_exists('admin/orecaptchalib.php') && is_readable('admin/recaptchalib.php')) {
++    require_once('admin/recaptchalib.php');
++    $publickey = "your public key"; // you got this from the signup page
++    $html .= recaptcha_get_html($publickey);
++  }
+   if (USE_SPAM_BLOCK)
+     $html .= '<div style="display:none"><input type="text" name="VerificationCodeX" value="" size="20"></div>';
+   $html .= '<p><input type=submit name="subscribe" value="'.$data["button"].'" onClick="return checkform();"></p>
+[root@davidy phplist]# diff -Naur phplist-2.10.12-orig/ phplist-2.10.12   
+diff -Naur phplist-2.10.12-orig/public_html/lists/admin/subscribelib2.php phplist-2.10.12/public_html/lists/admin/subscribelib2.php
+--- phplist-2.10.12-orig/public_html/lists/admin/subscribelib2.php	2010-04-24 03:01:15.000000000 +1200
++++ phplist-2.10.12/public_html/lists/admin/subscribelib2.php	2010-10-22 12:45:17.000000000 +1300
+@@ -87,6 +87,20 @@
+   }
+ }
+ 
++// Confirm reCAPTCHA was successfully entered 
++if (file_exists('admin/recaptchalib.php') && is_readable('admin/recaptchalib.php')) {
++  require_once('admin/recaptchalib.php');
++  $privatekey = "your private key";
++  $resp = recaptcha_check_answer ($privatekey,
++    $_SERVER["REMOTE_ADDR"],
++    $_POST["recaptcha_challenge_field"],
++    $_POST["recaptcha_response_field"]);
++  if (!$resp->is_valid) { 
++    $missing = 'Please try typing the two words again'; 
++    $allthere = 0;
++  }
++}
++
+ // anti spambot check
+ if (!empty($_POST['VerificationCodeX'])) {
+   if (NOTIFY_SPAM) {
+diff -Naur phplist-2.10.12-orig/public_html/lists/index.php phplist-2.10.12/public_html/lists/index.php
+--- phplist-2.10.12-orig/public_html/lists/index.php	2010-04-10 05:00:38.000000000 +1200
++++ phplist-2.10.12/public_html/lists/index.php	2010-10-22 12:44:20.000000000 +1300
+@@ -514,6 +514,12 @@
+   if (empty($data['button'])) {
+     $data['button'] = $GLOBALS['strSubmit'];
+   }
++  // Insert reCAPTCHA if library exists and webserver has permission to read it
++  if (file_exists('admin/orecaptchalib.php') && is_readable('admin/recaptchalib.php')) {
++    require_once('admin/recaptchalib.php');
++    $publickey = "your public key"; // you got this from the signup page
++    $html .= recaptcha_get_html($publickey);
++  }
+   if (USE_SPAM_BLOCK)
+     $html .= '<div style="display:none"><input type="text" name="VerificationCodeX" value="" size="20"></div>';
+   $html .= '<p><input type=submit name="subscribe" value="'.$data["button"].'" onClick="return checkform();"></p>
